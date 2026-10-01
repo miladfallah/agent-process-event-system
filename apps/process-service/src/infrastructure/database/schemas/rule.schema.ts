@@ -1,11 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-
-export enum Operator {
-  GT = 'GT',
-  LT = 'LT',
-  EQ = 'EQ',
-}
+import { Operator } from './rule.types';
+export { Operator } from './rule.types';
 
 export class RuleCondition {
   @Prop({ required: true })

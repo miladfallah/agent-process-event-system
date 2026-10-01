@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Rule, Operator } from '../../infrastructure/database/schemas/rule.schema';
+import { Operator } from '../../infrastructure/database/schemas/rule.types';
+import type { Rule } from '../../infrastructure/database/schemas/rule.schema';
 
 @Injectable()
 export class EvaluatorService {
