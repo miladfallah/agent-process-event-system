@@ -3,6 +3,8 @@ import * as amqp from 'amqplib';
 import { RMQ_CHANNEL } from '../../infrastructure/messaging/messaging.module';
 import { EngineService } from '../engine/engine.service';
 
+const MAX_RETRIES = 3;
+
 @Injectable()
 export class IngestionService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(IngestionService.name);
@@ -20,11 +22,12 @@ export class IngestionService implements OnModuleInit, OnModuleDestroy {
     const { consumerTag } = await this.channel.consume(queue, async (msg) => {
       if (!msg) return;
 
+      let payload: any;
       try {
         const content = msg.content.toString();
-        const payload = JSON.parse(content);
+        payload = JSON.parse(content);
 
-        // Validation against expected schema
+        // Validation against expected envelope schema
         if (!payload.eventId || !payload.schemaVersion || !payload.agentId) {
           throw new Error('MALFORMED_EVENT');
         }
@@ -42,16 +45,47 @@ export class IngestionService implements OnModuleInit, OnModuleDestroy {
       } catch (error) {
         if (error.message === 'DUPLICATE_EVENT') {
           // Idempotent success - ACK
+          this.logger.log(`Idempotent duplicate acknowledged: ${payload?.eventId}`);
           this.channel.ack(msg);
         } else if (error.message === 'MALFORMED_EVENT' || error instanceof SyntaxError) {
-          this.logger.error(`Malformed event detected. Routing to DLQ.`, error);
-          // Permanent failure - NACK without requeue (routes to DLQ)
+          this.logger.error(`Malformed event detected. Routing immediately to DLQ without retry.`, error);
+          // Permanent failure - NACK without requeue (routes to DLQ via deadLetterExchange)
           this.channel.nack(msg, false, false);
         } else {
-          this.logger.error(`Transient error processing event. Requeueing.`, error.stack);
-          // Transient failure (e.g., Mongo timeout) - NACK with requeue 
-          // Note: Real production would route to a TTL delay queue, but NACK w/requeue is adequate for immediate retry in this context unless specified otherwise.
-          this.channel.nack(msg, false, true);
+          // Transient failure (e.g. Mongo transient error, network blip)
+          const headers = msg.properties.headers || {};
+          const retryCount = (headers['x-retry-count'] as number) || 0;
+
+          if (retryCount < MAX_RETRIES) {
+            const nextRetry = retryCount + 1;
+            this.logger.warn(
+              `Transient error processing event ${payload?.eventId || 'unknown'}. Routing to retry queue with TTL backoff (attempt ${nextRetry}/${MAX_RETRIES}). Error: ${error.message}`
+            );
+
+            // Publish to delayed retry exchange with incremented retry count
+            this.channel.publish(
+              'events.retry.exchange',
+              'retry',
+              msg.content,
+              {
+                ...msg.properties,
+                headers: {
+                  ...headers,
+                  'x-retry-count': nextRetry,
+                },
+                persistent: true,
+              }
+            );
+
+            // Acknowledge the failed instance from the main queue so it does not block the worker
+            this.channel.ack(msg);
+          } else {
+            this.logger.error(
+              `Exceeded maximum retries (${MAX_RETRIES}) for event ${payload?.eventId || 'unknown'}. Routing to DLQ. Error: ${error.message}`
+            );
+            // Bounded retry exhausted -> NACK without requeue routes to DLQ
+            this.channel.nack(msg, false, false);
+          }
         }
       }
     });
