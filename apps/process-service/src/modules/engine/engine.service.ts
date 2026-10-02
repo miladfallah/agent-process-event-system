@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { Model, Connection } from 'mongoose';
+import { Model, Connection, Types } from 'mongoose';
 import { RulesService } from '../rules/rules.service';
 import { EvaluatorService } from './evaluator.service';
 import { Rule } from '../../infrastructure/database/schemas/rule.schema';
@@ -88,12 +88,17 @@ export class EngineService implements OnModuleInit, OnModuleDestroy {
         }));
         await this.ruleMatchModel.insertMany(ruleMatches, { session });
 
-        // 3. Update LeaderboardCounters
+        // 3. Update LeaderboardCounters using compound _id as a plain object
         for (const rule of matchedRules) {
-          await this.leaderboardModel.updateOne(
-            { _id: { ruleId: rule._id, agentId: payload.agentId } },
-            { $inc: { count: 1 } },
-            { upsert: true, session }
+          const counterId = {
+            ruleId: new Types.ObjectId(rule._id.toString()),
+            agentId: payload.agentId,
+          };
+          // Use $set on fields to avoid type conflict on _id
+          await (this.leaderboardModel as any).collection.updateOne(
+            { '_id.ruleId': counterId.ruleId, '_id.agentId': counterId.agentId },
+            { $inc: { count: 1 }, $setOnInsert: { _id: counterId } },
+            { upsert: true, session },
           );
         }
       }

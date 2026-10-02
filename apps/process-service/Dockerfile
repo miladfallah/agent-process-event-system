@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build process-service
+RUN ./node_modules/.bin/nest build process-service
 
 FROM node:22-alpine
 

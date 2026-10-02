@@ -1,22 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
-@Schema({ _id: false })
-export class LeaderboardCounterId {
-  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Rule' })
+export interface LeaderboardCounterId {
   ruleId: string;
-
-  @Prop({ required: true, type: String })
   agentId: string;
 }
 
 @Schema({ timestamps: true })
-export class LeaderboardCounter extends Document {
-  @Prop({ type: LeaderboardCounterId, required: true })
+export class LeaderboardCounter {
+  @Prop({ type: { ruleId: MongooseSchema.Types.ObjectId, agentId: String }, required: true })
   _id: LeaderboardCounterId;
 
   @Prop({ required: true, type: Number, default: 0 })
   count: number;
 }
 
+export type LeaderboardCounterDocument = HydratedDocument<LeaderboardCounter>;
 export const LeaderboardCounterSchema = SchemaFactory.createForClass(LeaderboardCounter);

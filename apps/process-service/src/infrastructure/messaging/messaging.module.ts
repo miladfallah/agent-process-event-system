@@ -1,5 +1,5 @@
 import { Module, Global, OnModuleDestroy, Logger, Inject } from '@nestjs/common';
-import * as amqp from 'amqplib';
+import amqp = require('amqplib');
 
 export const RMQ_CONNECTION = 'RMQ_CONNECTION';
 export const RMQ_CHANNEL = 'RMQ_CHANNEL';
@@ -16,7 +16,7 @@ export const RMQ_CHANNEL = 'RMQ_CHANNEL';
     },
     {
       provide: RMQ_CHANNEL,
-      useFactory: async (connection: amqp.Connection) => {
+      useFactory: async (connection: any) => {
         const channel = await connection.createChannel();
         
         // Setup topology
@@ -65,8 +65,8 @@ export class MessagingModule implements OnModuleDestroy {
   private readonly logger = new Logger(MessagingModule.name);
 
   constructor(
-    @Inject(RMQ_CONNECTION) private connection: amqp.Connection,
-    @Inject(RMQ_CHANNEL) private channel: amqp.Channel,
+    @Inject(RMQ_CONNECTION) private connection: any,
+    @Inject(RMQ_CHANNEL) private channel: any,
   ) {}
 
   async onModuleDestroy() {

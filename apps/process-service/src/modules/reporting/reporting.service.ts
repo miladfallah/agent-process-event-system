@@ -55,7 +55,7 @@ export class ReportingService {
       return acc;
     }, {} as Record<string, Date[]>);
 
-    let nextCursor = null;
+    let nextCursor: string | null = null;
     if (results.length === limit) {
       const lastItem = results[results.length - 1];
       nextCursor = Buffer.from(lastItem.occurredAt.getTime().toString()).toString('base64');

@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build agent-service
+RUN ./node_modules/.bin/nest build agent-service
 
 FROM node:22-alpine
 
