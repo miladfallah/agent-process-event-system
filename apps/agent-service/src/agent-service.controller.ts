@@ -1,12 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
-import { AgentServiceService } from './agent-service.service';
+import { Controller } from '@nestjs/common';
 
 @Controller()
-export class AgentServiceController {
-  constructor(private readonly agentServiceService: AgentServiceService) {}
-
-  @Get()
-  getHello(): string {
-    return this.agentServiceService.getHello();
-  }
-}
+export class AgentServiceController {}

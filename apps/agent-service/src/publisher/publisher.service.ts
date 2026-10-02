@@ -1,12 +1,12 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import * as amqp from 'amqplib';
+import amqp = require('amqplib');
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PublisherService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PublisherService.name);
-  private connection: amqp.Connection;
-  private channel: amqp.Channel;
+  private connection: any;
+  private channel: any;
 
   constructor(private configService: ConfigService) {}
 
@@ -30,11 +30,11 @@ export class PublisherService implements OnModuleInit, OnModuleDestroy {
         this.logger.log('Connected to RMQ.');
         return;
       } catch (e) {
-        this.logger.warn(`Failed to connect to RMQ. Retrying in 5s...`);
+        this.logger.warn(`Failed to connect to RMQ (attempt ${i + 1}/5). Retrying in 5s...`);
         await new Promise(res => setTimeout(res, 5000));
       }
     }
-    this.logger.error('Exhausted retries connecting to RMQ.');
+    this.logger.error('Exhausted retries connecting to RMQ. Events will be dropped.');
   }
 
   async publish(event: any) {
