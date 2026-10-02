@@ -94,10 +94,9 @@ export class EngineService implements OnModuleInit, OnModuleDestroy {
             ruleId: new Types.ObjectId(rule._id.toString()),
             agentId: payload.agentId,
           };
-          // Use $set on fields to avoid type conflict on _id
           await (this.leaderboardModel as any).collection.updateOne(
-            { '_id.ruleId': counterId.ruleId, '_id.agentId': counterId.agentId },
-            { $inc: { count: 1 }, $setOnInsert: { _id: counterId } },
+            { _id: counterId },
+            { $inc: { count: 1 } },
             { upsert: true, session },
           );
         }
