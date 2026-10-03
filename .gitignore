@@ -2,3 +2,7 @@ node_modules/
 dist/
 coverage/
 npm.log
+*.html
+*.pdf
+CHAT_HISTORY.md
+scripts/generate-pdf.py
