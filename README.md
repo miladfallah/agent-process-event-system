@@ -21,8 +21,10 @@ docker-compose up --build
 
 ### Accessing Services
 - **Process API**: `http://localhost:3000`
-- **RabbitMQ Management**: `http://localhost:15672` (guest / guest)
+- **Swagger / OpenAPI Documentation**: `http://localhost:3000/api/docs`
+- **RabbitMQ Management Dashboard**: `http://localhost:15672` (guest / guest)
 - **MongoDB**: `mongodb://localhost:27017`
+- **Redis**: `localhost:6379`
 
 ## API Usage
 
